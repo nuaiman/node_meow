@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - Stock Trading Simulation</title>
+    <link rel="stylesheet" href="/css/portfolio.css">
+    <script defer>
+        async function fetchStockData() {
+            const stockSymbol = document.getElementById("stock").value;
+            const apiKey = "eegavq5RrAwcZEvx4E__WGfRTMT7jOcc";
+            const url = `https://api.polygon.io/v2/last/trade/${stockSymbol}?apiKey=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Error fetching data");
+
+                const data = await response.json();
+
+                // Clear previous data
+                document.getElementById("stockPricesList").innerHTML = "";
+
+                if (data.results) {
+                    // Destructure data to get relevant fields
+                    const { T, p, q } = data.results;
+
+                    // Display stock data
+                    const listItem = `
+                        <li><strong>Symbol:</strong> ${T}</li>
+                        <li><strong>Price:</strong> $${p}</li>
+                        <li><strong>Available Quantity:</strong> ${q}</li>
+                    `;
+                    document.getElementById("stockPricesList").innerHTML = listItem;
+
+                    // Show the stock prices section and update the header
+                    const stockHeader = document.getElementById("stockPricesHeader");
+                    stockHeader.textContent = `${T} Stock Prices`;
+                    document.getElementById("stockPrices").style.display = "block";
+
+                    // Enable and set up the quantity input
+                    const quantityInput = document.getElementById("quantity");
+                    quantityInput.disabled = false;
+                    quantityInput.max = q;
+                    quantityInput.value = 1; // Reset to minimum
+                    document.getElementById("totalPrice").textContent = `Total Price: $${p}`;
+
+                    // Update total price when quantity changes
+                    quantityInput.oninput = () => {
+                        const quantity = Math.min(quantityInput.value, q); // Ensure max is not exceeded
+                        const totalPrice = quantity * p;
+                        document.getElementById("totalPrice").textContent = `Total Price: $${totalPrice.toFixed(2)}`;
+                    };
+                } else {
+                    document.getElementById("stockPricesList").innerHTML = "<li>No data found for the entered symbol.</li>";
+                }
+            } catch (error) {
+                document.getElementById("stockPricesList").innerHTML = "<li>Failed to fetch data. Please try again.</li>";
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Your Trading Portfolio</h1>
+        <nav>
+            <a href="/logout">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <section id="portfolio">
+            <h2>Your Portfolio</h2>
+            <ul id="portfolioList">
+                <!-- Portfolio items will be dynamically inserted here -->
+            </ul>
+        </section>
+
+        <section id="trade">
+            <h2>Trade Stocks</h2>
+            <form id="tradeForm">
+                <div class="input-group">
+                    <label for="stock">Stock Symbol:</label>
+                    <input type="text" id="stock" name="stock" value="AAPL" required>
+                    <button type="button" onclick="fetchStockData()">Search</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" value="1" min="1" disabled required>
+                </div>
+                <div id="totalPrice" class="total-price">Total Price: $0.00</div>
+
+                <div class="input-group">
+                    <label for="action">Action:</label>
+                    <select id="action" name="action" required>
+                        <option value="buy">Buy</option>
+                        <option value="sell">Sell</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="trade-button">Trade</button>
+            </form>
+        </section>
+
+        <section id="stockPrices" class="stock-prices" style="display: none;">
+            <h2 id="stockPricesHeader">Current Stock Prices</h2>
+            <ul id="stockPricesList"></ul>
+        </section>
+    </main>
+</body>
+</html>
